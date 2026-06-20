@@ -277,77 +277,95 @@ with tab3:
         accept_multiple_files=True
     )
 
-    if not uploaded_files:
-        st.info("Upload one or more WAV files.")
-        st.stop()
+    if uploaded_files:
 
-    results = []
+        st.write(
+            f"{len(uploaded_files)} files selected"
+        )
 
-    for uploaded_file in uploaded_files:
+        for file in uploaded_files:
 
-        temp_name = uploaded_file.name
+            st.write("✓", file.name)
 
-        with open(temp_name, "wb") as f:
-            f.write(
-                uploaded_file.getbuffer()
+        if st.button("Process Batch"):
+
+            results = []
+
+            with st.spinner(
+                "Matching songs..."
+            ):
+
+                for uploaded_file in uploaded_files:
+
+                    temp_name = uploaded_file.name
+
+                    with open(
+                        temp_name,
+                        "wb"
+                    ) as f:
+
+                        f.write(
+                            uploaded_file.getbuffer()
+                        )
+
+                    audio, sr = load_audio(
+                        temp_name
+                    )
+
+                    spec = compute_spectrogram(
+                        audio,
+                        sr
+                    )
+
+                    peaks = find_peaks(
+                        spec
+                    )
+
+                    hashes = generate_hashes(
+                        peaks
+                    )
+
+                    result = match_song(
+                        hashes,
+                        database
+                    )
+
+                    if result is None:
+
+                        prediction = "No Match"
+
+                    else:
+
+                        best_song, _ = result
+
+                        prediction = os.path.splitext(
+                            best_song
+                        )[0]
+
+                    results.append(
+                        {
+                            "filename": uploaded_file.name,
+                            "prediction": prediction
+                        }
+                    )
+
+            import pandas as pd
+
+            df = pd.DataFrame(results)
+
+            st.success(
+                "Batch processing complete!"
             )
 
-        audio, sr = load_audio(
-            temp_name
-        )
+            st.dataframe(df)
 
-        spec = compute_spectrogram(
-            audio,
-            sr
-        )
+            csv = df.to_csv(
+                index=False
+            ).encode("utf-8")
 
-        peaks = find_peaks(
-            spec
-        )
-
-        hashes = generate_hashes(
-            peaks
-        )
-
-        result = match_song(
-            hashes,
-            database
-        )
-
-        if result is None:
-
-            prediction = "No Match"
-
-        else:
-
-            best_song, _ = result
-
-            prediction = os.path.splitext(
-                best_song
-            )[0]
-
-        results.append(
-            {
-                "filename": uploaded_file.name,
-                "prediction": prediction
-            }
-        )
-
-    import pandas as pd
-
-    df = pd.DataFrame(results)
-
-    st.subheader("Results")
-
-    st.dataframe(df)
-
-    csv = df.to_csv(
-        index=False
-    ).encode("utf-8")
-
-    st.download_button(
-        "Download results.csv",
-        csv,
-        file_name="results.csv",
-        mime="text/csv"
-    )
+            st.download_button(
+                "Download results.csv",
+                csv,
+                file_name="results.csv",
+                mime="text/csv"
+            )
