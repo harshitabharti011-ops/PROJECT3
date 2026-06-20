@@ -10,10 +10,11 @@ from matcher import *
 # =====================================
 # PAGE TITLE
 # =====================================
-st.write("Current directory:", os.getcwd())
-st.write("Root contents:", os.listdir("."))
-st.title("🎵 Sonic Signature Song Identifier")
 
+st.title("🎵 Sonic Signature Song Identifier")
+tab1, tab2 = st.tabs(
+    ["📚 Library", "🔍 Identify"]
+)
 # =====================================
 # BUILD DATABASE
 # =====================================
@@ -29,7 +30,7 @@ song_hashes = {}
 
 for filename in os.listdir(SONGS_DIR):
 
-    if not filename.endswith(".wav") or filename.endswith(".mp3"):
+    if not filename.endswith(".wav"):
         continue
 
     path = os.path.join(SONGS_DIR,filename)
@@ -46,99 +47,166 @@ for filename in os.listdir(SONGS_DIR):
 
 database = build_database(song_hashes)
 
-st.success("Database created successfully!")
+with tab1:
 
-# =====================================
-# LOAD QUERY FILE
-# =====================================
+    st.header("Songs in Database")
 
-query_path = "query/query.wav"
+    st.success(
+        f"{len(song_hashes)} songs indexed"
+    )
 
-query_audio, query_sr = load_audio(query_path)
+    for song in song_hashes:
 
-query_spec = compute_spectrogram(
-    query_audio,
-    query_sr
-)
+        st.markdown(
+            f"""
+            **{song}**
 
-query_peaks = find_peaks(
-    query_spec
-)
-
-query_hashes = generate_hashes(
-    query_peaks
-)
-
-# =====================================
-# MATCH SONG
-# =====================================
-st.write("Songs in database:", list(song_hashes.keys()))
-st.write("Number of query peaks:", len(query_peaks))
-st.write("Number of query hashes:", len(query_hashes))
-st.write("Database size:", len(database))
-
-result = match_song(
-    query_hashes,
-    database
-)
-
-if result is None:
-
-    st.error("No match found")
-
-else:
-
-    best_song, offset_counts = result
-
-    st.subheader("Matched Song")
-
-    st.success(best_song)
-
-    # =====================================
-    # TOP OFFSET MATCHES
-    # =====================================
-
-    st.subheader("Top Offset Matches")
-
-    top_matches = sorted(
-        offset_counts.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:10]
-
-    for match, count in top_matches:
-
-        st.write(
-            f"{match}  →  {count}"
+            Hashes: {len(song_hashes[song])}
+            """
         )
 
-    # =====================================
-    # OFFSET HISTOGRAM
-    # =====================================
+with tab2:
 
-    song_offsets = {}
+    st.header("Identify Song")
 
-    for (song, offset), count in offset_counts.items():
+    uploaded_file = st.file_uploader(
+    "Upload WAV file",
+    type=["wav"]
+    )
+    if uploaded_file is not None:
 
-        if song == best_song:
+        with open(
+            "temp_query.wav",
+            "wb"
+        ) as f:
 
-            song_offsets[offset] = count
+            f.write(
+                uploaded_file.getbuffer()
+            )
 
-    fig = plt.figure(figsize=(10, 5))
+        query_path = "temp_query.wav"
 
-    plt.bar(
-        song_offsets.keys(),
-        song_offsets.values()
+    query_audio, query_sr = load_audio(query_path)
+
+    query_spec = compute_spectrogram(
+        query_audio,
+        query_sr
+    )
+    st.subheader("Spectrogram")
+
+    fig = plt.figure(figsize=(10,5))
+
+    plt.imshow(
+        query_spec,
+        aspect="auto",
+        origin="lower"
     )
 
-    plt.title(
-        f"Offset Histogram - {best_song}"
-    )
-
-    plt.xlabel("Offset")
-
-    plt.ylabel("Match Count")
-
-    st.subheader("Offset Histogram")
+    plt.title("Spectrogram")
 
     st.pyplot(fig)
+
+
+    query_peaks = find_peaks(
+        query_spec
+    )
+    st.subheader("Constellation Map")
+
+    fig = plt.figure(figsize=(10,5))
+
+    times = [p[1] for p in query_peaks]
+    freqs = [p[0] for p in query_peaks]
+
+    plt.scatter(
+        times,
+        freqs,
+        s=2
+    )
+
+    plt.title("Constellation Map")
+
+    st.pyplot(fig)
+
+    query_hashes = generate_hashes(
+        query_peaks
+    )
+
+    # =====================================
+    # MATCH SONG
+    # =====================================
+    st.write("Songs in database:", list(song_hashes.keys()))
+    st.write("Number of query peaks:", len(query_peaks))
+    st.write("Number of query hashes:", len(query_hashes))
+    st.write("Database size:", len(database))
+
+    result = match_song(
+        query_hashes,
+        database
+    )
+
+    if result is None:
+
+        st.error("No match found")
+
+    else:
+
+        best_song, offset_counts = result
+
+        st.subheader("Match Result")
+
+        st.success(
+            f"🎵 {best_song}"
+        )
+
+        # =====================================
+        # TOP OFFSET MATCHES
+        # =====================================
+
+        st.subheader("Top Offset Matches")
+
+        top_matches = sorted(
+            offset_counts.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:10]
+
+        for match, count in top_matches:
+
+            song, offset = match
+
+            st.write(
+                    f"{song} | Offset {int(offset)} | Matches {count}"
+            )
+
+        # =====================================
+        # OFFSET HISTOGRAM
+        # =====================================
+
+        song_offsets = {}
+
+        for (song, offset), count in offset_counts.items():
+
+            if song == best_song:
+
+                song_offsets[offset] = count
+
+        fig = plt.figure(figsize=(10, 5))
+
+        plt.bar(
+        song_offsets.keys(),
+        song_offsets.values()
+        )
+
+        plt.yscale("log")
+        
+        plt.title(
+            f"Offset Histogram - {best_song}"
+        )
+
+        plt.xlabel("Offset")
+
+        plt.ylabel("Match Count")
+
+        st.subheader("Offset Histogram")
+        plt.tight_layout()
+        st.pyplot(fig)
