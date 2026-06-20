@@ -64,6 +64,10 @@ query_hashes = generate_hashes(
 # =====================================
 # MATCH SONG
 # =====================================
+st.write("Songs in database:", list(song_hashes.keys()))
+st.write("Number of query peaks:", len(query_peaks))
+st.write("Number of query hashes:", len(query_hashes))
+st.write("Database size:", len(database))
 
 result = match_song(
     query_hashes,
