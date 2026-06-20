@@ -70,31 +70,49 @@ with tab2:
     st.header("Identify Song")
 
     uploaded_file = st.file_uploader(
-    "Upload WAV file",
-    type=["wav"]
+        "Upload WAV file",
+        type=["wav"]
     )
-    if uploaded_file is not None:
 
-        with open(
-            "temp_query.wav",
-            "wb"
-        ) as f:
+    # -----------------------------
+    # WAIT FOR USER TO UPLOAD FILE
+    # -----------------------------
+    if uploaded_file is None:
+        st.info("Please upload a WAV file.")
+        st.stop()
 
-            f.write(
-                uploaded_file.getbuffer()
-            )
+    # -----------------------------
+    # SAVE TEMP FILE
+    # -----------------------------
+    with open(
+        "temp_query.wav",
+        "wb"
+    ) as f:
 
-        query_path = "temp_query.wav"
+        f.write(
+            uploaded_file.getbuffer()
+        )
 
-    query_audio, query_sr = load_audio(query_path)
+    query_path = "temp_query.wav"
+
+    # -----------------------------
+    # LOAD QUERY
+    # -----------------------------
+    query_audio, query_sr = load_audio(
+        query_path
+    )
 
     query_spec = compute_spectrogram(
         query_audio,
         query_sr
     )
+
+    # -----------------------------
+    # SPECTROGRAM
+    # -----------------------------
     st.subheader("Spectrogram")
 
-    fig = plt.figure(figsize=(10,5))
+    fig = plt.figure(figsize=(10, 5))
 
     plt.imshow(
         query_spec,
@@ -104,15 +122,20 @@ with tab2:
 
     plt.title("Spectrogram")
 
+    plt.tight_layout()
+
     st.pyplot(fig)
 
-
+    # -----------------------------
+    # CONSTELLATION MAP
+    # -----------------------------
     query_peaks = find_peaks(
         query_spec
     )
+
     st.subheader("Constellation Map")
 
-    fig = plt.figure(figsize=(10,5))
+    fig = plt.figure(figsize=(10, 5))
 
     times = [p[1] for p in query_peaks]
     freqs = [p[0] for p in query_peaks]
@@ -125,20 +148,35 @@ with tab2:
 
     plt.title("Constellation Map")
 
+    plt.tight_layout()
+
     st.pyplot(fig)
 
+    # -----------------------------
+    # HASHES
+    # -----------------------------
     query_hashes = generate_hashes(
         query_peaks
     )
 
-    # =====================================
-    # MATCH SONG
-    # =====================================
-    st.write("Songs in database:", list(song_hashes.keys()))
-    st.write("Number of query peaks:", len(query_peaks))
-    st.write("Number of query hashes:", len(query_hashes))
-    st.write("Database size:", len(database))
+    st.write(
+        "Query Peaks:",
+        len(query_peaks)
+    )
 
+    st.write(
+        "Query Hashes:",
+        len(query_hashes)
+    )
+
+    st.write(
+        "Database Size:",
+        len(database)
+    )
+
+    # -----------------------------
+    # MATCH SONG
+    # -----------------------------
     result = match_song(
         query_hashes,
         database
@@ -146,23 +184,28 @@ with tab2:
 
     if result is None:
 
-        st.error("No match found")
+        st.error(
+            "No match found"
+        )
 
     else:
 
         best_song, offset_counts = result
 
-        st.subheader("Match Result")
+        st.subheader(
+            "Match Result"
+        )
 
         st.success(
             f"🎵 {best_song}"
         )
 
-        # =====================================
-        # TOP OFFSET MATCHES
-        # =====================================
-
-        st.subheader("Top Offset Matches")
+        # -----------------------------
+        # TOP MATCHES
+        # -----------------------------
+        st.subheader(
+            "Top Offset Matches"
+        )
 
         top_matches = sorted(
             offset_counts.items(),
@@ -175,13 +218,12 @@ with tab2:
             song, offset = match
 
             st.write(
-                    f"{song} | Offset {int(offset)} | Matches {count}"
+                f"{song} | Offset {int(offset)} | Matches {count}"
             )
 
-        # =====================================
-        # OFFSET HISTOGRAM
-        # =====================================
-
+        # -----------------------------
+        # HISTOGRAM
+        # -----------------------------
         song_offsets = {}
 
         for (song, offset), count in offset_counts.items():
@@ -190,23 +232,33 @@ with tab2:
 
                 song_offsets[offset] = count
 
-        fig = plt.figure(figsize=(10, 5))
+        fig = plt.figure(
+            figsize=(10, 5)
+        )
 
         plt.bar(
-        song_offsets.keys(),
-        song_offsets.values()
+            song_offsets.keys(),
+            song_offsets.values()
         )
 
         plt.yscale("log")
-        
+
         plt.title(
             f"Offset Histogram - {best_song}"
         )
 
-        plt.xlabel("Offset")
+        plt.xlabel(
+            "Offset"
+        )
 
-        plt.ylabel("Match Count")
+        plt.ylabel(
+            "Match Count"
+        )
 
-        st.subheader("Offset Histogram")
         plt.tight_layout()
+
+        st.subheader(
+            "Offset Histogram"
+        )
+
         st.pyplot(fig)
