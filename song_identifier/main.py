@@ -16,15 +16,22 @@ st.title("🎵 Sonic Signature Song Identifier")
 # =====================================
 # BUILD DATABASE
 # =====================================
-
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+SONGS_DIR = os.path.join(
+    BASE_DIR,
+    "..",
+    "songs"
+)
 song_hashes = {}
 
-for filename in os.listdir("songs"):
+for filename in os.listdir(SONGS_DIR):
 
     if not filename.endswith(".wav"):
         continue
 
-    path = os.path.join("songs", filename)
+    path = os.path.join(SONGS_DIR,filename)
 
     audio, sr = load_audio(path)
 
