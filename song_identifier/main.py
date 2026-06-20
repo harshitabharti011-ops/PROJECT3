@@ -39,7 +39,18 @@ for filename in os.listdir(SONGS_DIR):
 
     path = os.path.join(SONGS_DIR,filename)
 
-    audio, sr = load_audio(path)
+    try:
+
+        audio, sr = load_audio(path)
+    except Exception as e:
+
+        st.error(
+            f"Failed loading: {filename}"
+        )
+
+        st.write(e)
+
+        continue
 
     spec_db = compute_spectrogram(audio, sr)
 
