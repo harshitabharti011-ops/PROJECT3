@@ -29,7 +29,7 @@ song_hashes = {}
 
 for filename in os.listdir(SONGS_DIR):
 
-    if not filename.endswith(".wav"):
+    if not filename.endswith(".wav") or filename.endswith(".mp3"):
         continue
 
     path = os.path.join(SONGS_DIR,filename)
