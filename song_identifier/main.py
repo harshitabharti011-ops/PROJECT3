@@ -1,18 +1,30 @@
 import os
+import streamlit as st
+import matplotlib.pyplot as plt
 
 from spectrogram import *
 from peaks import *
 from fingerprint import *
 from matcher import *
-import matplotlib.pyplot as plt
+
+# =====================================
+# PAGE TITLE
+# =====================================
+
+st.title("🎵 Sonic Signature Song Identifier")
+
+# =====================================
+# BUILD DATABASE
+# =====================================
 
 song_hashes = {}
 
 for filename in os.listdir("songs"):
 
-    path = os.path.join("songs", filename)
+    if not filename.endswith(".wav"):
+        continue
 
-    print("Processing:", filename)
+    path = os.path.join("songs", filename)
 
     audio, sr = load_audio(path)
 
@@ -26,14 +38,15 @@ for filename in os.listdir("songs"):
 
 database = build_database(song_hashes)
 
-print("Database created")
-# ---------------------
-# QUERY SONG
-# ---------------------
+st.success("Database created successfully!")
 
-query_audio, query_sr = load_audio(
-    "query/query.wav"
-)
+# =====================================
+# LOAD QUERY FILE
+# =====================================
+
+query_path = "query/query.wav"
+
+query_audio, query_sr = load_audio(query_path)
 
 query_spec = compute_spectrogram(
     query_audio,
@@ -48,6 +61,10 @@ query_hashes = generate_hashes(
     query_peaks
 )
 
+# =====================================
+# MATCH SONG
+# =====================================
+
 result = match_song(
     query_hashes,
     database
@@ -55,16 +72,21 @@ result = match_song(
 
 if result is None:
 
-    print("No match found")
+    st.error("No match found")
 
 else:
 
     best_song, offset_counts = result
 
-    print("\nMatched Song:")
-    print(best_song)
+    st.subheader("Matched Song")
 
-    print("\nTop Offset Matches:")
+    st.success(best_song)
+
+    # =====================================
+    # TOP OFFSET MATCHES
+    # =====================================
+
+    st.subheader("Top Offset Matches")
 
     top_matches = sorted(
         offset_counts.items(),
@@ -74,28 +96,37 @@ else:
 
     for match, count in top_matches:
 
-        print(match, "->", count)
+        st.write(
+            f"{match}  →  {count}"
+        )
 
-song_offsets = {}
+    # =====================================
+    # OFFSET HISTOGRAM
+    # =====================================
 
-for (song, offset), count in offset_counts.items():
+    song_offsets = {}
 
-    if song == best_song:
+    for (song, offset), count in offset_counts.items():
 
-        song_offsets[offset] = count
+        if song == best_song:
 
-plt.figure(figsize=(10,5))
+            song_offsets[offset] = count
 
-plt.bar(
-    song_offsets.keys(),
-    song_offsets.values()
-)
+    fig = plt.figure(figsize=(10, 5))
 
-plt.title(
-    f"Offset Histogram - {best_song}"
-)
+    plt.bar(
+        song_offsets.keys(),
+        song_offsets.values()
+    )
 
-plt.xlabel("Offset")
-plt.ylabel("Match Count")
+    plt.title(
+        f"Offset Histogram - {best_song}"
+    )
 
-plt.show()
+    plt.xlabel("Offset")
+
+    plt.ylabel("Match Count")
+
+    st.subheader("Offset Histogram")
+
+    st.pyplot(fig)
