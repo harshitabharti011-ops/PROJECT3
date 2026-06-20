@@ -10,7 +10,8 @@ from matcher import *
 # =====================================
 # PAGE TITLE
 # =====================================
-
+st.write("Current directory:", os.getcwd())
+st.write("Root contents:", os.listdir("."))
 st.title("🎵 Sonic Signature Song Identifier")
 
 # =====================================
