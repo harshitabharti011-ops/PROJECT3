@@ -12,8 +12,12 @@ from matcher import *
 # =====================================
 
 st.title("🎵 Sonic Signature Song Identifier")
-tab1, tab2 = st.tabs(
-    ["📚 Library", "🔍 Identify"]
+tab1, tab2, tab3 = st.tabs(
+    [
+        "📚 Library",
+        "🔍 Identify",
+        "📦 Batch Mode"
+    ]
 )
 # =====================================
 # BUILD DATABASE
@@ -262,3 +266,88 @@ with tab2:
         )
 
         st.pyplot(fig)
+
+with tab3:
+
+    st.header("Batch Identification")
+
+    uploaded_files = st.file_uploader(
+        "Upload multiple WAV clips",
+        type=["wav"],
+        accept_multiple_files=True
+    )
+
+    if not uploaded_files:
+        st.info("Upload one or more WAV files.")
+        st.stop()
+
+    results = []
+
+    for uploaded_file in uploaded_files:
+
+        temp_name = uploaded_file.name
+
+        with open(temp_name, "wb") as f:
+            f.write(
+                uploaded_file.getbuffer()
+            )
+
+        audio, sr = load_audio(
+            temp_name
+        )
+
+        spec = compute_spectrogram(
+            audio,
+            sr
+        )
+
+        peaks = find_peaks(
+            spec
+        )
+
+        hashes = generate_hashes(
+            peaks
+        )
+
+        result = match_song(
+            hashes,
+            database
+        )
+
+        if result is None:
+
+            prediction = "No Match"
+
+        else:
+
+            best_song, _ = result
+
+            prediction = os.path.splitext(
+                best_song
+            )[0]
+
+        results.append(
+            {
+                "filename": uploaded_file.name,
+                "prediction": prediction
+            }
+        )
+
+    import pandas as pd
+
+    df = pd.DataFrame(results)
+
+    st.subheader("Results")
+
+    st.dataframe(df)
+
+    csv = df.to_csv(
+        index=False
+    ).encode("utf-8")
+
+    st.download_button(
+        "Download results.csv",
+        csv,
+        file_name="results.csv",
+        mime="text/csv"
+    )

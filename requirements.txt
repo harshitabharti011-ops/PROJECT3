@@ -5,3 +5,4 @@ scipy
 soundfile
 audioread
 streamlit
+pandas
