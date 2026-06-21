@@ -1,385 +1,3 @@
-# import os
-# import streamlit as st
-# import matplotlib.pyplot as plt
-
-# from spectrogram import *
-# from peaks import *
-# from fingerprint import *
-# from matcher import *
-
-# # =====================================
-# # PAGE TITLE
-# # =====================================
-
-# st.title("🎵 Sonic Signature Song Identifier")
-# tab1, tab2, tab3 = st.tabs(
-#     [
-#         "📚 Library",
-#         "🔍 Identify",
-#         "📦 Batch Mode"
-#     ]
-# )
-# # =====================================
-# # BUILD DATABASE
-# # =====================================
-# BASE_DIR = os.path.dirname(
-#     os.path.abspath(__file__)
-# )
-# SONGS_DIR = os.path.join(
-#     BASE_DIR,
-#     "..",
-#     "songs"
-# )
-# song_hashes = {}
-
-# for filename in os.listdir(SONGS_DIR):
-
-#     if not filename.endswith(".wav"):
-#         continue
-
-#     path = os.path.join(SONGS_DIR,filename)
-
-#     try:
-
-#         audio, sr = load_audio(path)
-#     except Exception as e:
-
-#         st.error(
-#             f"Failed loading: {filename}"
-#         )
-
-#         st.write(e)
-
-#         continue
-
-#     spec_db = compute_spectrogram(audio, sr)
-
-#     peaks = find_peaks(spec_db)
-
-#     hashes = generate_hashes(peaks)
-
-#     song_hashes[filename] = hashes
-
-# database = build_database(song_hashes)
-
-# with tab1:
-
-#     st.header("Songs in Database")
-
-#     st.success(
-#         f"{len(song_hashes)} songs indexed"
-#     )
-
-#     for song in song_hashes:
-
-#         st.markdown(
-#             f"""
-#             **{song}**
-
-#             Hashes: {len(song_hashes[song])}
-#             """
-#         )
-
-# with tab2:
-
-#     st.header("Identify Song")
-
-#     uploaded_file = st.file_uploader(
-#         "Upload WAV file",
-#         type=["wav"]
-#     )
-
-#     # -----------------------------
-#     # WAIT FOR USER TO UPLOAD FILE
-#     # -----------------------------
-#     if uploaded_file is None:
-#         st.info("Please upload a WAV file.")
-#         st.stop()
-
-#     # -----------------------------
-#     # SAVE TEMP FILE
-#     # -----------------------------
-#     with open(
-#         "temp_query.wav",
-#         "wb"
-#     ) as f:
-
-#         f.write(
-#             uploaded_file.getbuffer()
-#         )
-
-#     query_path = "temp_query.wav"
-
-#     # -----------------------------
-#     # LOAD QUERY
-#     # -----------------------------
-#     query_audio, query_sr = load_audio(
-#         query_path
-#     )
-
-#     query_spec = compute_spectrogram(
-#         query_audio,
-#         query_sr
-#     )
-
-#     # -----------------------------
-#     # SPECTROGRAM
-#     # -----------------------------
-#     st.subheader("Spectrogram")
-
-#     fig = plt.figure(figsize=(10, 5))
-
-#     plt.imshow(
-#         query_spec,
-#         aspect="auto",
-#         origin="lower"
-#     )
-
-#     plt.title("Spectrogram")
-
-#     plt.tight_layout()
-
-#     st.pyplot(fig)
-
-#     # -----------------------------
-#     # CONSTELLATION MAP
-#     # -----------------------------
-#     query_peaks = find_peaks(
-#         query_spec
-#     )
-
-#     st.subheader("Constellation Map")
-
-#     fig = plt.figure(figsize=(10, 5))
-
-#     times = [p[1] for p in query_peaks]
-#     freqs = [p[0] for p in query_peaks]
-
-#     plt.scatter(
-#         times,
-#         freqs,
-#         s=2
-#     )
-
-#     plt.title("Constellation Map")
-
-#     plt.tight_layout()
-
-#     st.pyplot(fig)
-
-#     # -----------------------------
-#     # HASHES
-#     # -----------------------------
-#     query_hashes = generate_hashes(
-#         query_peaks
-#     )
-
-#     st.write(
-#         "Query Peaks:",
-#         len(query_peaks)
-#     )
-
-#     st.write(
-#         "Query Hashes:",
-#         len(query_hashes)
-#     )
-
-#     st.write(
-#         "Database Size:",
-#         len(database)
-#     )
-
-#     # -----------------------------
-#     # MATCH SONG
-#     # -----------------------------
-#     result = match_song(
-#         query_hashes,
-#         database
-#     )
-
-#     if result is None:
-
-#         st.error(
-#             "No match found"
-#         )
-
-#     else:
-
-#         best_song, offset_counts = result
-
-#         st.subheader(
-#             "Match Result"
-#         )
-
-#         st.success(
-#             f"🎵 {best_song}"
-#         )
-
-#         # -----------------------------
-#         # TOP MATCHES
-#         # -----------------------------
-#         st.subheader(
-#             "Top Offset Matches"
-#         )
-
-#         top_matches = sorted(
-#             offset_counts.items(),
-#             key=lambda x: x[1],
-#             reverse=True
-#         )[:10]
-
-#         for match, count in top_matches:
-
-#             song, offset = match
-
-#             st.write(
-#                 f"{song} | Offset {int(offset)} | Matches {count}"
-#             )
-
-#         # -----------------------------
-#         # HISTOGRAM
-#         # -----------------------------
-#         song_offsets = {}
-
-#         for (song, offset), count in offset_counts.items():
-
-#             if song == best_song:
-
-#                 song_offsets[offset] = count
-
-#         fig = plt.figure(
-#             figsize=(10, 5)
-#         )
-
-#         plt.bar(
-#             song_offsets.keys(),
-#             song_offsets.values()
-#         )
-
-#         plt.yscale("log")
-
-#         plt.title(
-#             f"Offset Histogram - {best_song}"
-#         )
-
-#         plt.xlabel(
-#             "Offset"
-#         )
-
-#         plt.ylabel(
-#             "Match Count"
-#         )
-
-#         plt.tight_layout()
-
-#         st.subheader(
-#             "Offset Histogram"
-#         )
-
-#         st.pyplot(fig)
-
-# with tab3:
-
-#     st.header("Batch Identification")
-
-#     uploaded_files = st.file_uploader(
-#         "Upload multiple WAV clips",
-#         type=["wav"],
-#         accept_multiple_files=True
-#     )
-
-#     if uploaded_files:
-
-#         st.write(
-#             f"{len(uploaded_files)} files selected"
-#         )
-
-#         for file in uploaded_files:
-
-#             st.write("✓", file.name)
-
-#         if st.button("Process Batch"):
-
-#             results = []
-
-#             with st.spinner(
-#                 "Matching songs..."
-#             ):
-
-#                 for uploaded_file in uploaded_files:
-
-#                     temp_name = uploaded_file.name
-
-#                     with open(
-#                         temp_name,
-#                         "wb"
-#                     ) as f:
-
-#                         f.write(
-#                             uploaded_file.getbuffer()
-#                         )
-
-#                     audio, sr = load_audio(
-#                         temp_name
-#                     )
-
-#                     spec = compute_spectrogram(
-#                         audio,
-#                         sr
-#                     )
-
-#                     peaks = find_peaks(
-#                         spec
-#                     )
-
-#                     hashes = generate_hashes(
-#                         peaks
-#                     )
-
-#                     result = match_song(
-#                         hashes,
-#                         database
-#                     )
-
-#                     if result is None:
-
-#                         prediction = "No Match"
-
-#                     else:
-
-#                         best_song, _ = result
-
-#                         prediction = os.path.splitext(
-#                             best_song
-#                         )[0]
-
-#                     results.append(
-#                         {
-#                             "filename": uploaded_file.name,
-#                             "prediction": prediction
-#                         }
-#                     )
-
-#             import pandas as pd
-
-#             df = pd.DataFrame(results)
-
-#             st.success(
-#                 "Batch processing complete!"
-#             )
-
-#             st.dataframe(df)
-
-#             csv = df.to_csv(
-#                 index=False
-#             ).encode("utf-8")
-
-#             st.download_button(
-#                 "Download results.csv",
-#                 csv,
-#                 file_name="results.csv",
-#                 mime="text/csv"
-#             )
 
 import os
 import streamlit as st
@@ -745,7 +363,7 @@ st.markdown(
       <div class="header-icon">📊</div>
       <div class="header-text">
         <h1><span>EE200</span>: Audio Fingerprinting</h1>
-        <div class="subtitle">Signals, Systems &amp; Networks &nbsp;·&nbsp; Project Demo</div>
+        <div class="subtitle">Signals, Systems &amp; Networks &nbsp;·&nbsp; Project by Harshita </div>
         <div class="desc">Index a library of songs as spectrogram fingerprints, then identify any short clip against it.</div>
       </div>
     </div>
@@ -855,24 +473,78 @@ with tab1:
 with tab2:
     st.markdown('<div class="section-label">Identify Song</div>', unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader(
-        "Upload a WAV clip to identify",
-        type=["wav"],
-        label_visibility="collapsed",
+    st.markdown(
+    '<div class="section-label">Or Try A Sample</div>',
+    unsafe_allow_html=True
     )
 
-    if uploaded_file is None:
+    sample_files = [
+        "sample1.wav",
+        "sample2.wav",
+        "sample3.wav",
+        "sample4.wav",
+        "sample5.wav"
+    ]
+
+    selected_sample = None
+
+    for sample in sample_files:
+
+        col1, col2 = st.columns([5,1])
+
+        sample_path = os.path.join(
+            BASE_DIR,
+            "..",
+            "samples",
+            sample
+        )
+
+        with col1:
+            st.audio(sample_path)
+
+        with col2:
+            if st.button(
+                "Try",
+                key=sample
+            ):
+                selected_sample = sample_path
+
+    uploaded_file = st.file_uploader(
+    "Upload a WAV clip to identify",
+    type=["wav"],
+    label_visibility="collapsed",
+    )
+
+    query_path = None
+
+    if uploaded_file is not None:
+
+        with open(
+            "temp_query.wav",
+            "wb"
+        ) as f:
+
+            f.write(
+                uploaded_file.getbuffer()
+            )
+
+        query_path = "temp_query.wav"
+
+    elif selected_sample:
+
+        query_path = selected_sample
+
+    if query_path is None:
+
         st.markdown(
-            '<div class="info-banner">Upload a WAV file above to identify it against the library.</div>',
+            '<div class="info-banner">Upload a WAV file or try one of the sample clips.</div>',
             unsafe_allow_html=True,
         )
+
         st.stop()
 
     # Save temp file
-    with open("temp_query.wav", "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    query_audio, query_sr = load_audio("temp_query.wav")
+    query_audio, query_sr = load_audio(query_path)
     query_spec = compute_spectrogram(query_audio, query_sr)
     query_peaks = find_peaks(query_spec)
     query_hashes = generate_hashes(query_peaks)
@@ -911,11 +583,42 @@ with tab2:
         )
     else:
         best_song, offset_counts = result
+
+        candidate_scores = {}
+
+        for (song, offset), count in offset_counts.items():
+
+            candidate_scores[song] = (
+                candidate_scores.get(song, 0)
+                + count
+            )
+
+        candidate_scores = sorted(
+            candidate_scores.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
         display_best = os.path.splitext(best_song)[0].replace("_", " ").title()
         st.markdown(
             f'<div class="match-banner">🎵 {display_best}</div>',
             unsafe_allow_html=True,
         )
+
+        st.markdown(
+            '<div class="section-label">Candidate Scores</div>',
+            unsafe_allow_html=True
+        )
+
+        for song, score in candidate_scores[:5]:
+            st.write(
+                os.path.splitext(song)[0]
+            )
+
+            st.progress(
+                score /
+                candidate_scores[0][1]
+            )
 
         col_c, col_d = st.columns([1, 1])
 
@@ -947,6 +650,8 @@ with tab2:
                 if song == best_song
             }
             st.pyplot(histogram_fig(song_offsets, display_best), use_container_width=True)
+        
+    
 
 # ─────────────────────────────────────
 # TAB 3 — BATCH
