@@ -137,7 +137,7 @@ st.markdown(
 )
 
 # MATPLOTLIB DARK THEME HELPERS
-def dark_fig(w=10, h=4):
+def dark_fig(w=12, h=4):
     fig, ax = plt.subplots(figsize=(w, h))
     fig.patch.set_facecolor("#0d1117")
     ax.set_facecolor("#0d1117")
@@ -298,7 +298,7 @@ with tab1:
                     thumb_ax.scatter(times, freqs, s=1, c=colours, alpha=0.7)
                     thumb_ax.axis("off")
                     thumb_fig.tight_layout(pad=0)
-                    st.pyplot(thumb_fig, use_container_width=True)
+                    st.pyplot(thumb_fig)
                     plt.close(thumb_fig)
 
                 display_name = os.path.splitext(song)[0].replace("_", " ").title()
@@ -384,10 +384,10 @@ with tab2:
     col_a, col_b = st.columns(2)
     with col_a:
         st.markdown('<div class="sub-label">Spectrogram</div>', unsafe_allow_html=True)
-        st.pyplot(spectrogram_fig(query_spec), use_container_width=True)
+        st.pyplot(spectrogram_fig(query_spec))
     with col_b:
         st.markdown('<div class="sub-label">Constellation Map</div>', unsafe_allow_html=True)
-        st.pyplot(constellation_fig(query_peaks), use_container_width=True)
+        st.pyplot(constellation_fig(query_peaks))
 
     # Match
     result = match_song(query_hashes, database)
@@ -463,7 +463,7 @@ with tab2:
                 for (song, offset), count in offset_counts.items()
                 if song == best_song
             }
-            st.pyplot(histogram_fig(song_offsets, display_best), use_container_width=True)
+            st.pyplot(histogram_fig(song_offsets, display_best))
 
 
 # TAB 3 — BATCH
