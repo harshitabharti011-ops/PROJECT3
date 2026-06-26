@@ -424,16 +424,37 @@ with tab2:
             st.markdown('<div class="sub-label">Top Offset Matches</div>', unsafe_allow_html=True)
             top_matches = sorted(offset_counts.items(), key=lambda x: x[1], reverse=True)[:10]
             rows_html = "".join(
-                f"""
-                <div class="offset-row">
+                f"""<div class="offset-row">
                   <span class="song-name">{os.path.splitext(s)[0]}</span>
-                  <span class="offset-val">+{int(o)}</span>
+                  <span class="offset-val">{int(o):+}</span>
                   <span class="match-count">{c}</span>
-                </div>
-                """
+                </div>"""
                 for (s, o), c in top_matches
             )
-            st.markdown(f'<div class="offset-table">{rows_html}</div>', unsafe_allow_html=True)
+            import streamlit.components.v1 as components
+            components.html(
+                f"""
+                <style>
+                  body {{ margin: 0; background: transparent; }}
+                  .offset-table {{
+                    background: #0d1117; border: 1px solid #1e2530;
+                    border-radius: 8px; overflow: hidden;
+                  }}
+                  .offset-row {{
+                    display: flex; justify-content: space-between; align-items: center;
+                    padding: 6px 12px; border-bottom: 1px solid #1e2530;
+                    font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+                  }}
+                  .offset-row:last-child {{ border-bottom: none; }}
+                  .song-name {{ color: #8b949e; }}
+                  .offset-val {{ color: #484f58; }}
+                  .match-count {{ color: #39d353; font-weight: 600; }}
+                </style>
+                <div class="offset-table">{rows_html}</div>
+                """,
+                height=len(top_matches) * 36 + 2,
+                scrolling=False,
+            )
 
         with col_d:
             st.markdown('<div class="sub-label">Offset Histogram</div>', unsafe_allow_html=True)
