@@ -1,9 +1,9 @@
+# matcher.py
+
 from collections import defaultdict
 
 
-def match_song(query_hashes,
-               database,
-               min_votes=20):
+def match_song(query_hashes, database):
 
     offset_counts = defaultdict(int)
 
@@ -12,7 +12,9 @@ def match_song(query_hashes,
         if hash_key not in database:
             continue
 
-        for song_name, song_time in database[hash_key]:
+        matches = database[hash_key]
+
+        for song_name, song_time in matches:
 
             offset = song_time - query_time
 
@@ -28,9 +30,4 @@ def match_song(query_hashes,
 
     best_song = best_match[0]
 
-    best_votes = offset_counts[best_match]
-
-    if best_votes < min_votes:
-        return None
-
-    return best_song, best_votes
+    return best_song, offset_counts
