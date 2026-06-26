@@ -6,22 +6,6 @@ from collections import defaultdict
 def generate_hashes(
         peaks,
         fan_value=5):
-    """
-    Generate fingerprints from peaks.
-
-    Parameters
-    ----------
-    peaks : list of (freq_bin, time_bin)
-
-    fan_value :
-        number of future peaks to pair with
-
-    Returns
-    -------
-    hashes :
-        list of
-        (hash_key, time_anchor)
-    """
 
     hashes = []
 
